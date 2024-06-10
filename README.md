@@ -2,7 +2,9 @@
 
 Build with Docker or run a full environment with Docker Compose using the Iron Bank images.  
 
-This repository may be updated later to allow use of the public Moodle images, but for now it uses the Iron Bank images for both Moodle and its database.  All together, this project will stand up:
+⭐ **Note**: This repository requires that the user have access to a Registry1 access key.  If you do not have one, then you will need to swap the Iron Bank images for publicly available ones.
+
+All together, this project will deploy the following:
 - Moodle
 - Moodle's Postgres DB
 - Nginx
