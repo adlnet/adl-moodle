@@ -48,6 +48,10 @@ Open a browser to Moodle, for example, https://localhost
 
 Use the admin credentials you set in .env to login, then finish setting up your Moodle site.
 
+## Installing the cmi5 Plugin
+
+Download the [cmi5 plugin repo](https://github.com/adlnet/Moodle-mod_cmi5launch) as a zip file, then upload this as a Moodle plugin.
+
 ## Upgrading
 
 1. Backup the database (scripts/backup.sh)
