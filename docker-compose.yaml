@@ -1,0 +1,155 @@
+version: "3"
+services:
+
+  nginx:
+    restart: always
+    build: 
+      context: nginx
+      args:
+        HOSTNAME: "${HOSTNAME}"
+    ports:
+      - "80:80"
+      - "443:443"
+    container_name: docker_nginx
+    volumes:
+      - ./data/nginx/letsencrypt:/usr/share/nginx/html
+      - ./data/certbot/etc:/usr/share/keys
+      - moodle_www-data:/var/www/html
+      - moodle_moodle-data:/var/www/moodledata
+    networks:
+      - platform
+
+  certbot:
+    container_name: 'docker_certbot'
+    image: certbot/certbot
+    volumes:
+      - ./data/keys:/var/lib/letsencrypt
+      - ./data/nginx/letsencrypt:/data/letsencrypt
+      - ./data/certbot/etc:/etc/letsencrypt
+      - ./data/certbot/log:/var/log/letsencrypt
+    depends_on:
+      - nginx
+    networks:
+      - platform
+
+  player:
+    build: ./catapult/player
+    # image: catapult:player
+    container_name: docker_player
+    restart: always
+    depends_on:
+      - rdbms
+    volumes:
+      - ../catapult/player/service/index.js:/usr/src/app/index.js:ro
+      - ../catapult/player/service/knexfile.js:/usr/src/app/knexfile.js:ro
+      - ../catapult/player/service/plugins:/usr/src/app/plugins:ro
+      - ../catapult/player/service/lib:/usr/src/app/lib:ro
+      - ../catapult/player/migrations:/usr/src/app/migrations:ro
+      - ../catapult/player/seeds:/usr/src/app/seeds:ro
+      - catapult-player-data:/usr/src/app/var/content
+    environment:
+      - HOSTNAME
+      - DATABASE_USER=catapult
+      - DATABASE_USER_PASSWORD=quartz
+      - DATABASE_NAME=catapult_player
+      - CONTENT_URL=${PLAYER_CONTENT_URL}
+      - LRS_ENDPOINT
+      - LRS_USERNAME
+      - LRS_PASSWORD
+      - TOKEN_SECRET=${PLAYER_TOKEN_SECRET}
+      - API_KEY=${PLAYER_KEY}
+      - API_SECRET=${PLAYER_SECRET}
+      - PLAYER_API_ROOT
+      - PLAYER_STANDALONE_LAUNCH_URL_BASE
+    networks:
+      - platform
+
+  rdbms:
+    image: mysql:8.0.17
+    restart: always
+    volumes:
+      - catapult-cts-data:/var/lib/mysql
+      - ./init_db.sh:/docker-entrypoint-initdb.d/init_db.sh:ro
+    environment:
+      - MYSQL_RANDOM_ROOT_PASSWORD=yes
+      - DATABASE_USER=catapult
+      - DATABASE_USER_PASSWORD=quartz
+      - DATABASE_NAME=catapult_cts
+      - PLAYER_DATABASE_NAME=catapult_player
+    command: [
+      "mysqld",
+
+      # provide for full UTF-8 support
+      "--character-set-server=utf8mb4",
+      "--collation-server=utf8mb4_unicode_ci",
+
+      # need the following because the mysql.js client lib doesn't yet support
+      # the newer default scheme used in MySQL 8.x
+      "--default-authentication-plugin=mysql_native_password"
+    ]
+    networks:
+      - platform
+
+  db:
+    image: registry1.dso.mil/ironbank/opensource/postgres/postgresql:13.6
+    container_name: moodle-db
+    restart: always
+    environment:
+      POSTGRES_USER: "moodle"
+      POSTGRES_PASSWORD: "${MOODLE_DB_PASSWORD:?err}"
+      POSTGRES_DB: "moodle"
+    networks:
+      - platform
+    volumes:
+      - moodle_db-data:/var/lib/postgresql/data
+
+  moodle:
+    # image: moodlehq/moodleapp
+    build:
+      context: .
+    restart: always
+    container_name: docker_moodle
+    environment:
+      PGHOST: "db"
+      PG_DATABASE: "moodle"
+      PG_USER: "moodle"
+      APP_DB_ADMIN_PASSWORD: "${MOODLE_DB_PASSWORD:?err}"
+      MOODLE_DATABASE_HOST: "db"
+      MOODLE_DATABASE_NAME: "moodle"
+      MOODLE_DATABASE_USER: "moodle"
+      MOODLE_DATABASE_PASSWORD: "${MOODLE_DB_PASSWORD:?err}"
+      MOODLE_DBPORT: ${MOODLE_DB_PORT:-5432}
+      MOODLE_DB_TYPE: "${MOODLE_DB_TYPE:-pgsql}"
+      MOODLE_SITE_LONG_NAME: "${MOODLE_SITE_LONG_NAME:?err}"
+      MOODLE_SITE_SHORT_NAME: "${MOODLE_SITE_SHORT_NAME:?err}"
+      MOODLE_URL_SCHEME: "${MOODLE_URL_SCHEME:-http}"
+      MOODLE_HOST: "https://${HOSTNAME:?err}"
+      MOODLE_ADMIN_USERNAME: "${MOODLE_ADMIN_USERNAME:?err}"
+      MOODLE_ADMIN_PASSWORD: "${MOODLE_ADMIN_PASSWORD:?err}"
+      MOODLE_ADMIN_EMAIL: "${MOODLE_ADMIN_EMAIL:?err}"
+    networks:
+      - platform
+    volumes:
+      - moodle_www-data:/var/www/html
+      - moodle_moodle-data:/var/www/moodledata
+      #- ./themes/portal:/var/www/html/theme/portal
+    depends_on:
+      - db
+
+networks:
+  platform:
+    driver: bridge
+
+volumes:
+  letsencrypt:
+    driver: local
+  moodle_db-data:
+    driver: local
+  moodle_www-data:
+    driver: local
+  moodle_moodle-data:
+    driver: local
+  catapult-player-data:
+    driver: local
+  catapult-cts-data:
+    driver: local
