@@ -1,99 +1,34 @@
-# Moodle running under Nginx/PHP-FPM with PostgreSQL
+# ADL Moodle
 
-Build with Docker or run a full environment with Docker Compose.
+Build with Docker or run a full environment with Docker Compose using the Iron Bank images.  
 
-Moodle VM is Ubuntu 20.04.4 LTS
+⭐ **Note**: This repository requires that the user have access to a Registry1 access key.  If you do not have one, then you will need to swap the Iron Bank images for publicly available ones.
 
-Make sure Ubuntu is up-to-date:
+All together, this project will deploy the following:
+- Moodle
+- Moodle's Postgres DB
+- Nginx
+- CATAPULT cmi5 Player
+- CATAPULT cmi5 Player's DB
 
+## Setup
+
+To stand this up, we will populate the required values for the given environment, then use the Docker Compose library to build + start the containers.
+
+If using the Iron Bank images, you must first log into Registry1 with your provided credentials.
 ```
-$ sudo apt update
-$ sudo apt upgrade
-```
-
-## Deployment Keys for Production Systems
-
-```bash
-$ ssh-keygen -t ed25519 -C "example@adlnet.gov"
-$ vi ~/.ssh/config
-```
-
-```text
-Host github.com-repo-0
-    Hostname github.com
-    IdentityFile=/home/ubuntu/.ssh/id_ed25519
+docker login registry1.dso.mil
 ```
 
-<https://github.com/adlnet/castle-moodle/settings/keys>
+Once that's done, you should be able to pull the required images.
 
-Clone the Repo
-
-```bash
-$ git clone git@github.com-repo-0:adlnet/castle-moodle.git
-```
-
-## Install Docker
-
-```
-$ sh scripts/install-docker.sh
-```
-
-## Download the dependencies
-
-Before building, the build's external dependencies must be downloaded.
-
-```
-$ sh scripts/download-deps.sh
-```
-
-## Login to registry1
-
-```
-docker login https://registry1.dso.mil
-```
-
-## Build and run with Docker Compose
-
-First you will need a .env file with this environment's settings. Startup will install and maintain an SSL certificate.
-
-```
-$ cp env-moodle .env
-$ vi .env
-```
-
-Example config:
-
-```
-MOODLE_SITE_LONG_NAME=
-MOODLE_SITE_SHORT_NAME=
-
-MOODLE_URL_SCHEME=https
-MOODLE_HOST=localhost
-
-MOODLE_ADMIN_USERNAME=lowercase_username
-MOODLE_ADMIN_PASSWORD=password_with_upper_and_lowercase
-MOODLE_ADMIN_EMAIL=
-
-MOODLE_DB_PASSWORD=
-
-NGINX_HOSTNAME=localhost
-LETS_ENCRYPT_EMAIL=
-
-```
-
-Next, build and run everything.
-
-Running includes:
-1. Configuring an SSL certificate (this will automatically generate a self-signed or request a certbot certificate)
-2. Starting crond for background tasks
-3. Configuring Moodle for PHP, MariaDB/PostgreSQL, and the Admin credentials
-4. Starting Apache
-5. Directory volumes for SSL Certificates, Moodle Application, Moodle Data, and Database
-
-```
-$ export DOCKER_BUILDKIT=1
-$ docker-compose up --build -d
-```
+1. `git clone https://github.com/adlnet/adl-moodle`
+2. `cd adl-moodle`
+3. `bash ./setup.sh`
+4. `bash ./init-ssl.sh <Your Hostname>`
+5. `cp .env.example .env`
+6. Populate the `.env` file
+7. `docker-compose build --no-cache && docker-compose up -d`
 
 ## Login to Moodle
 
@@ -108,7 +43,6 @@ Use the admin credentials you set in .env to login, then finish setting up your 
 3. Run the upgrade script (scripts/upgrade-moodle-version.sh)
 4. Log into Moodle, confirm the upgrade process
 
-
 ## Backups
 
 Backups are in ~/backup
@@ -116,7 +50,6 @@ Backups are in ~/backup
 ```bash
 $ scripts/backup.sh
 ```
-
 
 ## Restore
 
