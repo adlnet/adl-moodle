@@ -39,14 +39,6 @@ services:
     restart: always
     depends_on:
       - rdbms
-    volumes:
-      - ../catapult/player/service/index.js:/usr/src/app/index.js:ro
-      - ../catapult/player/service/knexfile.js:/usr/src/app/knexfile.js:ro
-      - ../catapult/player/service/plugins:/usr/src/app/plugins:ro
-      - ../catapult/player/service/lib:/usr/src/app/lib:ro
-      - ../catapult/player/migrations:/usr/src/app/migrations:ro
-      - ../catapult/player/seeds:/usr/src/app/seeds:ro
-      - catapult-player-data:/usr/src/app/var/content
     environment:
       - HOSTNAME
       - DATABASE_USER=catapult
