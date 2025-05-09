@@ -7,9 +7,13 @@ services:
       context: nginx
       args:
         HOSTNAME: "${HOSTNAME}"
+        CONF_FILE: "${CONF_FILE}"
     ports:
       - "80:80"
       - "443:443"
+    environment:
+      - HOSTNAME
+      - CONF_FILE
     container_name: docker_nginx
     volumes:
       - ./data/nginx/letsencrypt:/usr/share/nginx/html
@@ -31,6 +35,10 @@ services:
       - nginx
     networks:
       - platform
+
+  cron:
+    build: ./cron
+    restart: always
 
   player:
     build: ./catapult/player
@@ -115,7 +123,7 @@ services:
       MOODLE_SITE_LONG_NAME: "${MOODLE_SITE_LONG_NAME:?err}"
       MOODLE_SITE_SHORT_NAME: "${MOODLE_SITE_SHORT_NAME:?err}"
       MOODLE_URL_SCHEME: "${MOODLE_URL_SCHEME:-http}"
-      MOODLE_HOST: "https://${HOSTNAME:?err}"
+      MOODLE_HOST: "${MOODLE_URL_SCHEME}://${HOSTNAME:?err}"
       MOODLE_ADMIN_USERNAME: "${MOODLE_ADMIN_USERNAME:?err}"
       MOODLE_ADMIN_PASSWORD: "${MOODLE_ADMIN_PASSWORD:?err}"
       MOODLE_ADMIN_EMAIL: "${MOODLE_ADMIN_EMAIL:?err}"

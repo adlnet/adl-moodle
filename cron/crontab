@@ -1,0 +1,1 @@
+*/1 * * * myuser /runCron.sh
